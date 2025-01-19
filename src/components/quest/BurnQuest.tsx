@@ -14,17 +14,22 @@ import NFTCard from "./NFTCard";
 import { useWalletContext } from "@/context/WalletContext";
 import "@reown/appkit-wallet-button/react";
 import { Metaplex, walletAdapterIdentity } from "@metaplex-foundation/js";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Connection, PublicKey } from "@solana/web3.js";
+import { Provider } from "@reown/appkit-adapter-solana/react";
+import { useAppKitProvider } from "@reown/appkit/react";
 
 export default function BurnQuestPage() {
+  const [nfts, setNfts] = useState([]);
+
   const { handleOpenWallet, isConnected, address } = useWalletContext();
+  const { walletProvider } = useAppKitProvider<Provider>("solana");
 
   const metaplex =
     address !== undefined
       ? Metaplex.make(new Connection("https://api.testnet.solana.com")).use(
           walletAdapterIdentity({
-            publicKey: new PublicKey(address),
+            publicKey: new PublicKey(walletProvider.publicKey || ""),
           })
         )
       : undefined;
@@ -50,6 +55,7 @@ export default function BurnQuestPage() {
           owner: new PublicKey(address),
         });
         console.log("NFT data", NFTs);
+        setNfts(NFTs);
       }
     } catch (err) {
       console.log("Erorr fetching NFTs", err);
@@ -107,12 +113,18 @@ export default function BurnQuestPage() {
 
         <section className="space-y-6">
           <h2 className="text-2xl font-semibold">Select NFTs to Burn</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-            <NFTCard />
-            <NFTCard />
-            <NFTCard />
-            <NFTCard />
-          </div>
+          {nfts.length > 0 ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+              <NFTCard />
+              <NFTCard />
+              <NFTCard />
+              <NFTCard />
+            </div>
+          ) : (
+            <div className="w-full text-center text-2xl font-semibold">
+              You currently have no NFTs in your wallet
+            </div>
+          )}
         </section>
 
         {/* <section className="space-y-6">
