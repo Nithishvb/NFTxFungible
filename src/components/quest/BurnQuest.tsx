@@ -11,38 +11,69 @@ import {
 } from "@/components/ui/card";
 import { Wallet } from "lucide-react";
 import NFTCard from "./NFTCard";
-import { useAppKit } from "@/config/config"
+import { useWalletContext } from "@/context/WalletContext";
+import "@reown/appkit-wallet-button/react";
+import { Metaplex, walletAdapterIdentity } from "@metaplex-foundation/js";
+import { useEffect } from "react";
+import { Connection, PublicKey } from "@solana/web3.js";
 
 export default function BurnQuestPage() {
+  const { handleOpenWallet, isConnected, address } = useWalletContext();
 
-  const modal = useAppKit();
+  const metaplex =
+    address !== undefined
+      ? Metaplex.make(new Connection("https://api.testnet.solana.com")).use(
+          walletAdapterIdentity({
+            publicKey: new PublicKey(address),
+          })
+        )
+      : undefined;
 
-  const handleConnectWallet = () => {
-    modal.open();
-  }
+  useEffect(() => {
+    if (isConnected && address) {
+      fetchUserNft(address);
+    }
+  }, [address]);
+
+  const handleBurnNft = () => {
+    if (!isConnected) {
+      handleOpenWallet();
+      return;
+    }
+    console.log("address", address);
+  };
+
+  const fetchUserNft = async (address: string) => {
+    try {
+      if (metaplex) {
+        const NFTs = await metaplex.nfts().findAllByOwner({
+          owner: new PublicKey(address),
+        });
+        console.log("NFT data", NFTs);
+      }
+    } catch (err) {
+      console.log("Erorr fetching NFTs", err);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gray-900 text-gray-100 p-8">
       <div className="max-w-6xl mx-auto space-y-8">
         <header className="flex justify-between items-center">
           <h1 className="text-4xl font-bold text-purple-400">NFTxFungible</h1>
-          <Button
-            onClick={handleConnectWallet}
-            className="px-4 py-2 rounded-full bg-gradient-to-b from-blue-500 to-blue-600 text-white focus:ring-2 focus:ring-blue-400 hover:shadow-xl transition duration-200"
-          >
-            <Wallet className="mr-1 h-4 w-4" /> Connect Wallet
-          </Button>
+          {isConnected && address ? (
+            <Button className="px-4 py-2 rounded-full bg-white text-white focus:ring-2 focus:ring-blue-400 hover:shadow-xl transition duration-200 hover:bg-white">
+              <appkit-account-button />
+            </Button>
+          ) : (
+            <Button
+              onClick={handleOpenWallet}
+              className="px-4 py-2 rounded-full bg-gradient-to-b from-blue-500 to-blue-600 text-white focus:ring-2 focus:ring-blue-400 hover:shadow-xl transition duration-200"
+            >
+              <Wallet className="mr-1 h-4 w-4" /> Connect Wallet
+            </Button>
+          )}
         </header>
-
-        <section className="space-y-6">
-          <h2 className="text-2xl font-semibold">Select NFTs to Burn</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-            <NFTCard />
-            <NFTCard />
-            <NFTCard />
-            <NFTCard />
-          </div>
-        </section>
 
         <section className="space-y-6">
           <h2 className="text-2xl font-semibold">Active Burn Quests</h2>
@@ -64,11 +95,24 @@ export default function BurnQuestPage() {
               </p>
             </CardContent>
             <CardFooter>
-              <Button className="w-full bg-purple-600 hover:bg-purple-500">
+              <Button
+                className="w-full bg-purple-600 hover:bg-purple-500"
+                onClick={handleBurnNft}
+              >
                 Select NFTs to Burn
               </Button>
             </CardFooter>
           </Card>
+        </section>
+
+        <section className="space-y-6">
+          <h2 className="text-2xl font-semibold">Select NFTs to Burn</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            <NFTCard />
+            <NFTCard />
+            <NFTCard />
+            <NFTCard />
+          </div>
         </section>
 
         {/* <section className="space-y-6">
